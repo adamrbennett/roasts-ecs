@@ -1,5 +1,6 @@
 node {
   stage('Deploy') {
-    print "DOCKER_IMAGE = ${DOCKER_IMAGE}"
+    sh "aws ecr get-login --profile ps_free | sh"
+    sh "docker pull ${DOCKER_IMAGE}"
   }
 }
