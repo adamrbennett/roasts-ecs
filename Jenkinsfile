@@ -1,6 +1,5 @@
 node {
   stage('Deploy') {
-    sh "aws ecr get-login --profile ps_free | sh"
-    sh "docker pull ${DOCKER_IMAGE}"
+    sh "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free"
   }
 }
