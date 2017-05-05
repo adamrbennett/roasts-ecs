@@ -8,40 +8,42 @@ node {
     // check if the service already exists
     def exists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
 
+    def container_definition = """
+      [
+        {
+          "cpu": 128,
+          "environment": [{
+            "name": "APP_PORT",
+            "value": "80"
+          }],
+          "portMappings": [
+            {
+              "hostPort": 0,
+              "containerPort": 80,
+              "protocol": "tcp"
+            }
+          ],
+          "logConfiguration": {
+            "logDriver": "awslogs",
+            "options": {
+              "awslogs-group": "sfiip-roasts",
+              "awslogs-region": "us-east-1"
+            }
+          },
+          "essential": true,
+          "image": "${DOCKER_IMAGE}",
+          "memory": 128,
+          "memoryReservation": 64,
+          "name": "roasts"
+        }
+      ]
+    """.replaceAll("\\s", "")
+
+    print "Using container definition: ${container_definition}"
+
     // create a new task definition
     // def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
-    def revision = sh script: '''
-      aws ecs register-task-definition --profile ps_free --family roasts --container-definitions <<EOF | jq -j '.taskDefinition.revision'
-        [
-          {
-            "cpu": 128,
-            "environment": [{
-              "name": "APP_PORT",
-              "value": "80"
-            }],
-            "portMappings": [
-              {
-                "hostPort": 0,
-                "containerPort": 80,
-                "protocol": "tcp"
-              }
-            ],
-            "logConfiguration": {
-              "logDriver": "awslogs",
-              "options": {
-                "awslogs-group": "sfiip-roasts",
-                "awslogs-region": "us-east-1"
-              }
-            },
-            "essential": true,
-            "image": "${DOCKER_IMAGE}",
-            "memory": 128,
-            "memoryReservation": 64,
-            "name": "roasts"
-          }
-        ]
-      EOF
-    ''', returnStdout: true
+    def revision = sh script: "aws ecs register-task-definition --profile ps_free --family roasts --container-definitions ${container_definition} | jq -j '.taskDefinition.revision'", returnStdout: true
 
     if (exists == 0) {
       print "Service ${service_name} already exists, updating"
