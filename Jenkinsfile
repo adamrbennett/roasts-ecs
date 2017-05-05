@@ -4,11 +4,13 @@ node {
     def service_name = "roasts-${VERSION}"
     def exists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | .serviceArn'", returnStatus: true
 
+    def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
+
     if (exists == 0) {
       print "Service exists, updating"
+      sh "aws ecs update-service --profile ps_free --cluster sfiip --service ${service_name} --task-definition roasts:${revision}"
     } else {
       print "Creating new service"
-      def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
       def target_group_arn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${service_name} --protocol HTTP --port 80 --vpc-id ${VPC_ID} --profile ps_free | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
       def max_priority = sh script: "aws elbv2 describe-rules --profile ps_free --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true
       def priority = (max_priority as Integer) + 1
