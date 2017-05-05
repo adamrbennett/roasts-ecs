@@ -2,7 +2,7 @@ node {
   checkout scm
   stage('Deploy') {
     def service_name = "roasts-${VERSION}"
-    def exists = sh script: "aws ecs describe-services --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | .serviceArn'", returnStatus: true
+    def exists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | .serviceArn'", returnStatus: true
 
     if (exists == 0) {
       print "Service exists, updating"
