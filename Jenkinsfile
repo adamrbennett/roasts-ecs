@@ -27,7 +27,9 @@ node {
 
       // determine the new priority (max existing + 1)
       def max_priority = sh script: "aws elbv2 describe-rules --profile ps_free --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true
-      def priority = (max_priority as Integer) + 1
+      def priority = 100
+      if (max_priority.isNumber())
+        priority = (max_priority as Integer) + 1
 
       // create the ALB listener rule
       sh "aws elbv2 create-rule --profile ps_free --listener-arn ${ALB_LISTENER_ARN} --conditions Field=host-header,Values=${service_name}.${DOMAIN} --priority ${priority} --actions Type=forward,TargetGroupArn=${target_group_arn}"
