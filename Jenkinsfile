@@ -10,8 +10,7 @@ node {
       print "Creating new service"
       def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
       def target_group_arn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${service_name} --protocol HTTP --port 80 --vpc-id ${VPC_ID} --profile ps_free | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
-      def priority = sh script: "aws elbv2 describe-rules --profile ps_free --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true
-      priority++
+      def priority = (sh script: "aws elbv2 describe-rules --profile ps_free --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true) as Integer + 1
       sh "aws elbv2 create-rule --profile ps_free --listener-arn ${ALB_LISTENER_ARN} --conditions Field=host-header,Values=${service_name}.${DOMAIN} --priority ${priority} --actions Type=forward,TargetGroupArn=${target_group_arn}"
       sh "aws ecs create-service --profile ps_free --cluster ${ECS_CLUSTER} --service-name ${service_name} --task-definition roasts:${revision} --desired-count ${DESIRED_COUNT} --role ${ECS_SERVICE_ROLE_ARN} --load-balancers targetGroupArn=${target_group_arn},containerName=roasts,containerPort=80"
     }
