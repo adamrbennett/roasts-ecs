@@ -36,7 +36,7 @@ node {
                 }
               },
               "essential": true,
-              "image": "${IMAGE}",
+              "image": "${DOCKER_IMAGE}",
               "memory": 128,
               "memoryReservation": 64,
               "name": "roasts"
