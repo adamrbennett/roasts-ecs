@@ -23,7 +23,7 @@ const roasts = [
 ];
 
 app.get('/', (req, res) => {
-  res.sendStatus(200);
+  res.send("Roasts");
 });
 
 app.get(root, (req, res) => {
