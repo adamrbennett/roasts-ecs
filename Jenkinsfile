@@ -11,7 +11,7 @@ node {
     // create a new task definition
     // def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
     def revision = sh script: '''
-      aws ecs register-task-definition --family roasts --container-definitions <<EOF
+      aws ecs register-task-definition --profile ps_free --family roasts --container-definitions <<EOF
         [
           {
             "cpu": 128,
@@ -40,7 +40,7 @@ node {
             "name": "roasts"
           }
         ]
-      EOF --profile ps_free | jq -j '.taskDefinition.revision'
+      EOF | jq -j '.taskDefinition.revision'
     ''', returnStdout: true
 
     if (exists == 0) {
