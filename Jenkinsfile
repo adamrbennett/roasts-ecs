@@ -11,38 +11,35 @@ node {
     // create a new task definition
     // def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
     def revision = sh script: '''
-      aws ecs register-task-definition --container-definitions <<EOF
-{
-  "family": "roasts",
-  "containerDefinitions": [
-    {
-      "cpu": 128,
-      "environment": [{
-        "name": "APP_PORT",
-        "value": "80"
-      }],
-      "portMappings": [
-        {
-          "hostPort": 0,
-          "containerPort": 80,
-          "protocol": "tcp"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "sfiip-roasts",
-          "awslogs-region": "us-east-1"
-        }
-      },
-      "essential": true,
-      "image": "${DOCKER_IMAGE}",
-      "memory": 128,
-      "memoryReservation": 64,
-      "name": "roasts"
-    }
-  ]
-}
+      aws ecs register-task-definition --family roasts --container-definitions <<EOF
+        [
+          {
+            "cpu": 128,
+            "environment": [{
+              "name": "APP_PORT",
+              "value": "80"
+            }],
+            "portMappings": [
+              {
+                "hostPort": 0,
+                "containerPort": 80,
+                "protocol": "tcp"
+              }
+            ],
+            "logConfiguration": {
+              "logDriver": "awslogs",
+              "options": {
+                "awslogs-group": "sfiip-roasts",
+                "awslogs-region": "us-east-1"
+              }
+            },
+            "essential": true,
+            "image": "${DOCKER_IMAGE}",
+            "memory": 128,
+            "memoryReservation": 64,
+            "name": "roasts"
+          }
+        ]
       EOF --profile ps_free | jq -j '.taskDefinition.revision'
     ''', returnStdout: true
 
