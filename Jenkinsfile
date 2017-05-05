@@ -42,7 +42,7 @@ node {
     """.replaceAll("\\s", "")
 
     // create a new task definition
-    def taskRevision = sh script: "aws ecs register-task-definition --profile ps_free --family ${service} --container-definitions '${containerDefinitions}' | jq -j '.taskDefinition.taskRevision'", returnStdout: true
+    def taskRevision = sh script: "aws ecs register-task-definition --profile ps_free --family ${service} --container-definitions '${containerDefinitions}' | jq -j '.taskDefinition.revision'", returnStdout: true
 
     if (serviceExists == 0) {
       print "Service ${serviceName} already exists, updating"
