@@ -39,11 +39,11 @@ node {
       ]
     """.replaceAll("\\s", "")
 
-    print "Using container definition: ${container_definition}"
+    print "Using container definition: '${container_definition}'"
 
     // create a new task definition
     // def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
-    def revision = sh script: "aws ecs register-task-definition --profile ps_free --family roasts --container-definitions ${container_definition} | jq -j '.taskDefinition.revision'", returnStdout: true
+    def revision = sh script: "aws ecs register-task-definition --profile ps_free --family roasts --container-definitions '${container_definition}' | jq -j '.taskDefinition.revision'", returnStdout: true
 
     if (exists == 0) {
       print "Service ${service_name} already exists, updating"
