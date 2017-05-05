@@ -23,7 +23,7 @@ const roasts = [
 ];
 
 app.get('/', (req, res) => {
-  res.send("Roasts");
+  res.send("Healthy");
 });
 
 app.get(root, (req, res) => {
@@ -42,5 +42,11 @@ app.get(`${root}/:id`, (req, res) => {
   return res.send(roast);
 });
 
-app.listen(port);
+let server = app.listen(port);
+process.on('SIGINT', () => {
+  console.log('Shutting down');
+  server.close();
+  process.exit(0);
+});
+
 console.log(`Listening on port: ${port}`);
