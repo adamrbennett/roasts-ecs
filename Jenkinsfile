@@ -6,9 +6,7 @@ node {
     def service_name = "roasts-${VERSION}"
 
     // check if the service already exists
-    def exists = sh script: '''
-    aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | select(.status == "ACTIVE") | .serviceArn'
-    ''', returnStatus: true
+    def exists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${service_name} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
 
     // create a new task definition
     def revision = sh script: "aws ecs register-task-definition --cli-input-json file://ecs-task-definition.json --profile ps_free | jq -j '.taskDefinition.revision'", returnStdout: true
