@@ -6,8 +6,11 @@ node {
     def service = "roasts"
     def serviceName = "${service}-${VERSION}"
 
-    // check if the service already serviceExists
+    // check if the service exists
     def serviceExists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${serviceName} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
+
+    // check if the log group exists
+    def logGroupExists = sh script: "aws logs describe-log-groups --profile ps_free | jq -e '.logGroups | .[] | select(.logGroupName == \"/sfi/ip/${serviceName}\")'", returnStatus: true
 
     // the container definitions
     def containerDefinitions = """
@@ -28,7 +31,7 @@ node {
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-              "awslogs-group": "sfiip-${service}",
+              "awslogs-group": "/sfi/ip/${serviceName}",
               "awslogs-region": "us-east-1"
             }
           },
@@ -40,6 +43,11 @@ node {
         }
       ]
     """.replaceAll("\\s", "")
+
+    // create the log group, if necessary
+    if (logGroupExists != 0) {
+      sh "aws logs create-log-group --profile ps_free --log-group-name /sfi/ip/${serviceName}"
+    }
 
     // create a new task definition
     def taskRevision = sh script: "aws ecs register-task-definition --profile ps_free --family ${service} --container-definitions '${containerDefinitions}' | jq -j '.taskDefinition.revision'", returnStdout: true
