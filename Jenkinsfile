@@ -7,10 +7,10 @@ node {
     def serviceName = "${service}-${VERSION}"
 
     // check if the service exists
-    def serviceExists = sh script: "aws ecs describe-services --profile ps_free --cluster ${ECS_CLUSTER} --services ${serviceName} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
+    def serviceExists = sh script: "aws ecs describe-services --cluster ${ECS_CLUSTER} --services ${serviceName} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
 
     // check if the log group exists
-    def logGroupExists = sh script: "aws logs describe-log-groups --profile ps_free | jq -e '.logGroups | .[] | select(.logGroupName == \"/sfi/ip/${serviceName}\")'", returnStatus: true
+    def logGroupExists = sh script: "aws logs describe-log-groups | jq -e '.logGroups | .[] | select(.logGroupName == \"/sfi/ip/${serviceName}\")'", returnStatus: true
 
     // the container definitions
     def containerDefinitions = """
@@ -46,17 +46,17 @@ node {
 
     // create the log group, if necessary
     if (logGroupExists != 0) {
-      sh "aws logs create-log-group --profile ps_free --log-group-name /sfi/ip/${serviceName}"
+      sh "aws logs create-log-group --log-group-name /sfi/ip/${serviceName}"
     }
 
     // create a new task definition
-    def taskRevision = sh script: "aws ecs register-task-definition --profile ps_free --family ${service} --container-definitions '${containerDefinitions}' | jq -j '.taskDefinition.revision'", returnStdout: true
+    def taskRevision = sh script: "aws ecs register-task-definition --family ${service} --container-definitions '${containerDefinitions}' | jq -j '.taskDefinition.revision'", returnStdout: true
 
     if (serviceExists == 0) {
       print "Service ${serviceName} already exists, updating"
 
       // update the service to use the new task definition
-      sh "aws ecs update-service --profile ps_free --cluster sfiip --service ${serviceName} --task-definition ${service}:${taskRevision}"
+      sh "aws ecs update-service --cluster sfiip --service ${serviceName} --task-definition ${service}:${taskRevision}"
     } else {
       print "Creating new service: ${serviceName}"
 
@@ -64,19 +64,19 @@ node {
       def targetGroupArn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${serviceName} --protocol HTTP --port 80 --vpc-id ${VPC_ID} --profile ps_free | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
 
       // update the target group attributes
-      sh "aws elbv2 modify-target-group-attributes --profile ps_free --target-group-arn ${targetGroupArn} --attributes Key=deregistration_delay.timeout_seconds,Value=60"
+      sh "aws elbv2 modify-target-group-attributes --target-group-arn ${targetGroupArn} --attributes Key=deregistration_delay.timeout_seconds,Value=60"
 
       // determine the new priority (max existing + 1)
-      def maxPriority = sh script: "aws elbv2 describe-rules --profile ps_free --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true
+      def maxPriority = sh script: "aws elbv2 describe-rules --listener-arn ${ALB_LISTENER_ARN} | jq -j '.Rules | sort_by(.Priority) | .[0:-1] | max_by(.Priority) | .Priority'", returnStdout: true
       def priority = 100
       if (maxPriority.isNumber())
         priority = (maxPriority as Integer) + 1
 
       // create the ALB listener rule
-      sh "aws elbv2 create-rule --profile ps_free --listener-arn ${ALB_LISTENER_ARN} --conditions Field=host-header,Values=${serviceName}.${DOMAIN} --priority ${priority} --actions Type=forward,TargetGroupArn=${targetGroupArn}"
+      sh "aws elbv2 create-rule --listener-arn ${ALB_LISTENER_ARN} --conditions Field=host-header,Values=${serviceName}.${DOMAIN} --priority ${priority} --actions Type=forward,TargetGroupArn=${targetGroupArn}"
 
       // create the new service
-      sh "aws ecs create-service --profile ps_free --cluster ${ECS_CLUSTER} --service-name ${serviceName} --task-definition ${service}:${taskRevision} --desired-count ${DESIRED_COUNT} --role ${ECS_SERVICE_ROLE_ARN} --load-balancers targetGroupArn=${targetGroupArn},containerName=${service},containerPort=80"
+      sh "aws ecs create-service --cluster ${ECS_CLUSTER} --service-name ${serviceName} --task-definition ${service}:${taskRevision} --desired-count ${DESIRED_COUNT} --role ${ECS_SERVICE_ROLE_ARN} --load-balancers targetGroupArn=${targetGroupArn},containerName=${service},containerPort=80"
     }
   }
 }
