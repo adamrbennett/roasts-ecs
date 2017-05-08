@@ -61,7 +61,7 @@ node {
       print "Creating new service: ${serviceName}"
 
       // create the target group
-      def targetGroupArn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${serviceName} --protocol HTTP --port 80 --vpc-id ${VPC_ID} --profile ps_free | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
+      def targetGroupArn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${serviceName} --protocol HTTP --port 80 --vpc-id ${VPC_ID} | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
 
       // update the target group attributes
       sh "aws elbv2 modify-target-group-attributes --target-group-arn ${targetGroupArn} --attributes Key=deregistration_delay.timeout_seconds,Value=60"
