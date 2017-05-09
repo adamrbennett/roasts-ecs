@@ -10,7 +10,7 @@ node {
     def serviceExists = sh script: "aws ecs describe-services --cluster ${ECS_CLUSTER} --services ${serviceName} | jq -je '.services | .[0] | select(.status == \"ACTIVE\") | .serviceArn'", returnStatus: true
 
     // check if the log group exists
-    def logGroupExists = sh script: "aws logs describe-log-groups | jq -e '.logGroups | .[] | select(.logGroupName == \"/sfi/ip/${serviceName}\")'", returnStatus: true
+    def logGroupExists = sh script: "aws logs describe-log-groups | jq -e '.logGroups | .[] | select(.logGroupName == \"/${RESOURCE_PREFIX}/${serviceName}\")'", returnStatus: true
 
     // the container definitions
     def containerDefinitions = """
@@ -31,7 +31,7 @@ node {
           "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-              "awslogs-group": "/sfi/ip/${serviceName}",
+              "awslogs-group": "/${RESOURCE_PREFIX}/${serviceName}",
               "awslogs-region": "us-east-1"
             }
           },
@@ -46,7 +46,7 @@ node {
 
     // create the log group, if necessary
     if (logGroupExists != 0) {
-      sh "aws logs create-log-group --log-group-name /sfi/ip/${serviceName}"
+      sh "aws logs create-log-group --log-group-name /${RESOURCE_PREFIX}/${serviceName}"
     }
 
     // create a new task definition
@@ -56,12 +56,12 @@ node {
       print "Service ${serviceName} already exists, updating"
 
       // update the service to use the new task definition
-      sh "aws ecs update-service --cluster sfiip --service ${serviceName} --task-definition ${service}:${taskRevision}"
+      sh "aws ecs update-service --cluster ${ECS_CLUSTER} --service ${serviceName} --task-definition ${service}:${taskRevision}"
     } else {
       print "Creating new service: ${serviceName}"
 
       // create the target group
-      def targetGroupArn = sh script: "aws elbv2 create-target-group --name sfiip-ecs-${serviceName} --protocol HTTP --port 80 --vpc-id ${VPC_ID} | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
+      def targetGroupArn = sh script: "aws elbv2 create-target-group --name ${resourcePrefix}-ecs-${serviceName} --protocol HTTP --port 80 --vpc-id ${VPC_ID} | jq -j '.TargetGroups | .[0] | .TargetGroupArn'", returnStdout: true
 
       // update the target group attributes
       sh "aws elbv2 modify-target-group-attributes --target-group-arn ${targetGroupArn} --attributes Key=deregistration_delay.timeout_seconds,Value=60"
