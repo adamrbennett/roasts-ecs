@@ -7,18 +7,15 @@ const root = '/roasts';
 const roasts = [
   {
     id: "light",
-    type: "Light",
-    origin: "Honduras"
+    type: "Light"
   },
   {
     id: "medium",
-    type: "Medium",
-    origin: "Guatemala"
+    type: "Medium"
   },
   {
     id: "dark",
-    type: "Dark",
-    origin: "Columbia"
+    type: "Dark"
   }
 ];
 
