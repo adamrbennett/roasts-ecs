@@ -91,7 +91,7 @@ resource "aws_ecs_service" "service" {
 }
 
 resource "aws_alb_listener_rule" "private" {
-  listener_arn = "${data.terraform_remote_state.ecs.private_alb_listener_arn}"
+  listener_arn = "${data.terraform_remote_state.ecs.public_alb_listener_arn}"
   priority = 102
 
   action {
